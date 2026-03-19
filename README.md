@@ -1,6 +1,6 @@
 # Steam Library Analysis Dashboard
 
-**Live Demo:** [Click here to view the live dashboard]([LINK](https://steamlibrarydashboard-bc99vjmfpwi24e6jpdmfvm.streamlit.app/))
+**Live Demo:** [Click here to view the live dashboard](https://steamlibrarydashboard-bc99vjmfpwi24e6jpdmfvm.streamlit.app/)
 
 ## Project Overview
 The Steam Library Analyst is an interactive data visualization dashboard built with Python and Streamlit. It connects to the Steam Web API to fetch, clean, and analyze a user's gaming data. The application processes JSON data to provide insights into gaming habits, top-played titles, and overall library statistics.
