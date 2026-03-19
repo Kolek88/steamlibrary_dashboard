@@ -2,29 +2,28 @@ import streamlit as st
 import pandas as pd
 import requests
 
-st.set_page_config(page_title="Steam Library Analyst", page_icon="🎮", layout="wide")
+st.set_page_config(page_title="Steam Library Analyst", layout="wide")
 
 API_KEY = st.secrets["STEAM_API_KEY"]
 STEAM_ID = st.secrets["STEAM_ID"]
 
 @st.cache_data
 def get_steam_library():
-    # We added '&include_played_free_games=1' so Gacha/Free games show up!
+    # API URL includes free-to-play games
     url = f"http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={API_KEY}&steamid={STEAM_ID}&format=json&include_appinfo=1&include_played_free_games=1"
     
     try:
         response = requests.get(url)
-        response.raise_for_status() # Check for errors
+        response.raise_for_status()
         data = response.json()
         games = data['response']['games']
         
         df = pd.DataFrame(games)
         
-        # 1. Clean the Data
+        # Convert playtime from minutes to hours
         df['playtime_hours'] = round(df['playtime_forever'] / 60, 1)
         
-        # 2. CREATE THE IMAGE URL COLUMN
-        # Steam stores images at this specific URL pattern
+        # Generate Steam CDN image URLs
         df['image_url'] = df['appid'].apply(lambda x: f"https://steamcdn-a.akamaihd.net/steam/apps/{x}/header.jpg")
         
         return df[['name', 'playtime_hours', 'image_url', 'appid']]
@@ -33,14 +32,14 @@ def get_steam_library():
         st.error(f"Error: {e}")
         return pd.DataFrame()
 
-# --- DASHBOARD UI ---
-st.title("🎮 My Steam Library Analyst")
+# Dashboard UI
+st.title("My Steam Library Analyst")
 
 with st.spinner("Fetching library..."):
     df = get_steam_library()
 
 if not df.empty:
-    # Metrics
+    # Calculate summary metrics
     total_hours = df['playtime_hours'].sum()
     fav_game = df.loc[df['playtime_hours'].idxmax()]['name']
     
@@ -51,30 +50,26 @@ if not df.empty:
     
     st.divider()
     
-    # 3. DISPLAY WITH IMAGES
-    st.subheader("🏆 Top Games by Playtime")
+    st.subheader("Top Games by Playtime")
     
-    # Sort and pick Top 15
+    # Filter datasets for visualizations
     top_games = df.sort_values(by='playtime_hours', ascending=False).head(15)
-
-        # Sort by playtime
     top_10 = df.sort_values(by='playtime_hours', ascending=False).head(10)
     
-    # Draw the Bar Chart
     st.bar_chart(top_10, x="name", y="playtime_hours", color="#1b2838") 
     
-    # We use 'column_config' to tell Streamlit that 'image_url' is actually a Picture
+    # Render dataframe with image columns
     st.dataframe(
         top_games,
         column_config={
             "image_url": st.column_config.ImageColumn("Cover Art", width="medium"),
             "playtime_hours": st.column_config.NumberColumn("Hours Played", format="%.1f hrs"),
             "name": "Game Title",
-            "appid": None # Hide the AppID (it's ugly)
+            "appid": None 
         },
         use_container_width=True,
         hide_index=True
     )
 
 else:
-    st.warning("No games found! Check your API Key and ID.")
+    st.warning("No games found. Verify API Key and Steam ID.")
